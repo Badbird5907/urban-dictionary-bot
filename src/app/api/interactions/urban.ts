@@ -81,7 +81,7 @@ export const getEmbedData = async (value: string, isPublic: boolean, page: numbe
           }
         ],
         footer: {
-          text: `👍 ${definition.thumbs_up} | 👎 ${definition.thumbs_down}${list.length > 1 && ` • ${s.icon}${s.name}`} • ${date}`,
+          text: `👍 ${definition.thumbs_up} | 👎 ${definition.thumbs_down}${list.length > 1 ? ` • ${s.icon}${s.name}` : ""} • ${date}`,
           icon_url: "https://urbandictionary.fyi/upload/logo1.png",
         },
         color: 0xf1fc47,
