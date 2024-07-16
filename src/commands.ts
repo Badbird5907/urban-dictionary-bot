@@ -15,6 +15,8 @@ const PING_COMMAND = {
 const INVITE_COMMAND = {
   name: "invite",
   description: "Get an invite link to add this bot to your server",
+  contexts: [0,1,2],
+  integration_types: [0,1],
 } as const
 
 const URBAN_COMMAND = {
