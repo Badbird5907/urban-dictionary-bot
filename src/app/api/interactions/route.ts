@@ -9,8 +9,9 @@ import {
   MessageFlags,
 } from "discord-api-types/v10"
 import { NextResponse } from "next/server"
-import { UrbanDictionaryDefinition } from "@/types/urban"
+import { waitUntil } from "@vercel/functions";
 import { getEmbedData } from "@/app/api/interactions/urban"
+import { Inter } from "next/font/google"
 
 /**
  * Use edge runtime which is faster, cheaper, and has no cold-boot.
@@ -50,16 +51,35 @@ export async function POST(request: Request) {
       return new NextResponse("Invalid request", { status: 400 })
     }
     if (id.startsWith("page")) {
+      console.log(id);
       const [_, page, isPublic, value] = id.split(":");
       const p = parseInt(page);
       if (isNaN(p) || p < 0) {
         return new NextResponse("Invalid request", { status: 400 })
       }
-      const embed = await getEmbedData(value, isPublic === "true", p);
+      console.log(JSON.stringify(interaction, null, 2));
+      // @ts-ignore - stfu
+      const interactionId = interaction.message.interaction_metadata.id;
+      // @ts-ignore - stfu
+      const token = interaction.token;
+      console.log("Token", token)
+      waitUntil((async () => {  
+        const embed = await getEmbedData(value, isPublic === "true", p);
+        // PATCH /webhooks/{application.id}/{interaction.token}/messages/@original
+        console.log("Sending followup embed")
+        const res = await fetch(`https://discord.com/api/v9/webhooks/${env.DISCORD_APP_ID}/${token}/messages/@original`, {
+          method: "PATCH",
+          headers: {
+            "Content-Type": "application/json",
+          },
+          body: JSON.stringify({
+            ...embed,
+          }),
+        });
+      })())
       return NextResponse.json({
-        type: InteractionResponseType.UpdateMessage,
-        data: embed,
-      });
+        type: InteractionResponseType.DeferredMessageUpdate,
+      })
     }
   }
 

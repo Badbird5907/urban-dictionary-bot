@@ -66,14 +66,20 @@ export const getEmbedData = async (value: string, isPublic: boolean, page: numbe
         "components": [
             {
               "type": 2,
-              "label": "Previous",
+              "emoji": {
+                "id": null,
+                "name": "⬅️"
+              }, 
               "style": 2,
               "custom_id": `page:${page - 1}:${isPublic}:${encodeURIComponent(value)}`,
               "disabled": disablePrevious
             },
             {
                 "type": 2,
-                "label": "Next",
+                "emoji": {
+                  "id": null,
+                  "name": "➡️"
+                },
                 "style": 2,
                 "custom_id": `page:${page + 1}:${isPublic}:${encodeURIComponent(value)}`,
                 "disabled": disableNext,
