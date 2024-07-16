@@ -33,6 +33,7 @@ function capitalizeFirstLetter(s: string) {
 export async function POST(request: Request) {
   const verifyResult = await verifyInteractionRequest(request, env.DISCORD_APP_PUBLIC_KEY)
   if (!verifyResult.isValid || !verifyResult.interaction) {
+    console.error("Invalid request", verifyResult)
     return new NextResponse("Invalid request", { status: 401 })
   }
   const { interaction } = verifyResult
