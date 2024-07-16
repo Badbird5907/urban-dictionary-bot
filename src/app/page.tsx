@@ -15,7 +15,7 @@ export default async function Page() {
             <span className="text-2xl text-gray-200">
               A simple Discord Bot that fetches definitions from the Urban Dictionary
             </span>
-            <Image src="/assets/demo.png" alt="Demo" width={600} height={350} className="rounded-lg place-self-center" />
+            <Image src="/assets/demo.gif" alt="Demo" width={600} height={350} className="rounded-lg place-self-center" />
             <Link href={"/add"}>
               <Button>
                 <PlusIcon className="pr-2" />
