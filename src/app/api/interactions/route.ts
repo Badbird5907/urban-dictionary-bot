@@ -110,6 +110,8 @@ export async function POST(request: Request) {
           if (description.length > 256) {
             description = description.slice(0, 253) + "...";
           }
+          const permalink = "https://www.urbandictionary.com/define.php?term=" + encodeURIComponent(definition.word) + "&defid=" + definition.defid;
+
           const data = {
             embeds: [
               {
@@ -118,9 +120,9 @@ export async function POST(request: Request) {
                 description: linkify(description),
                 author: {
                   name: `Written by ${definition.author}`,
-                  url: definition.permalink,
+                  url: permalink,
                 },
-                url: definition.permalink,
+                url: permalink,
                 fields: [
                   {
                     name: "Example",
