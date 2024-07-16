@@ -16,7 +16,7 @@ export default async function Page() {
               A simple Discord Bot that fetches definitions from the Urban Dictionary
             </span>
             <Image src="/assets/demo.gif" alt="Demo" width={600} height={350} className="rounded-lg place-self-center" />
-            <Link href={"/add"}>
+            <Link href={"https://discord.com/oauth2/authorize?client_id=1262782933735833711"}>
               <Button>
                 <PlusIcon className="pr-2" />
                 Add
