@@ -24,7 +24,7 @@ export const sortType: {[key: string]: {name: string, icon: string, style?: numb
   },
 }
 
-export const getEmbedData = async (value: string, isPublic: boolean, page: number = 0, sort: keyof typeof sortType = "tu") => {
+export const getEmbedData = async (value: string, isPublic: boolean, _page: number = 0, sort: keyof typeof sortType = "tu") => {
   const { list }: { list: UrbanDictionaryDefinition[] } = await fetch(`https://api.urbandictionary.com/v0/define?term=${value}`).then((res) => {
     return res.json()
   })
@@ -35,6 +35,7 @@ export const getEmbedData = async (value: string, isPublic: boolean, page: numbe
   const currentSortIndex = Object.keys(sortType).findIndex((key) => key === sort);
   const nextSort = Object.keys(sortType)[(currentSortIndex + 1) % Object.keys(sortType).length];
   const sorted = list.sort((a, b) => s.sort(a, b));
+  const page = Math.min(Math.max(_page, 0), sorted.length - 1);
   const definition = sorted[page];
   if (!definition) {
     return false;
@@ -56,12 +57,14 @@ export const getEmbedData = async (value: string, isPublic: boolean, page: numbe
   }
   const permalink = "https://www.urbandictionary.com/define.php?term=" + encodeURIComponent(definition.word) + "&defid=" + definition.defid;
   const disableNext = page === sorted.length - 1;
-  const disablePrevious = page === 0;
+  const disablePrevious = page === 0 || !page;
   const date: string = new Date(definition.written_on).toLocaleDateString("en-US", {
     year: "numeric",
     month: "long",
     day: "numeric"
   });
+
+  const encoded = encodeURIComponent(value);
 
   const data = {
     embeds: [
@@ -81,7 +84,7 @@ export const getEmbedData = async (value: string, isPublic: boolean, page: numbe
           }
         ],
         footer: {
-          text: `👍 ${definition.thumbs_up} | 👎 ${definition.thumbs_down}${list.length > 1 ? ` • ${s.icon}${s.name}` : ""} • ${date}`,
+          text: `👍 ${definition.thumbs_up} | 👎 ${definition.thumbs_down}${list.length > 1 ? ` • ${s.icon}${s.name}` : ""} • ${page + 1}/${list.length} • ${date}`,
           icon_url: "https://urbandictionary.fyi/upload/logo1.png",
         },
         color: 0xf1fc47,
@@ -96,10 +99,20 @@ export const getEmbedData = async (value: string, isPublic: boolean, page: numbe
               "type": 2,
               "emoji": {
                 "id": null,
+                "name": "⏪"
+              },
+              "style": 2,
+              "custom_id": `j:0:${isPublic}:${sort}:${encoded}`,
+              "disabled": disablePrevious,
+            },
+            {
+              "type": 2,
+              "emoji": {
+                "id": null,
                 "name": "⬅️"
               }, 
               "style": 2,
-              "custom_id": `page:${page - 1}:${isPublic}:${sort}:${encodeURIComponent(value)}`,
+              "custom_id": `p:${page - 1}:${isPublic}:${sort}:${encoded}`,
               "disabled": disablePrevious
             },
             ...(list.length > 1 ? [
@@ -110,7 +123,7 @@ export const getEmbedData = async (value: string, isPublic: boolean, page: numbe
                   "name": s.icon,
                 },
                 "style": s.style ?? 2,
-                "custom_id": `cs:${isPublic}:${nextSort}:${encodeURIComponent(value)}`
+                "custom_id": `cs:${isPublic}:${nextSort}:${encoded}`
               },
             ] : []),
             {
@@ -120,11 +133,21 @@ export const getEmbedData = async (value: string, isPublic: boolean, page: numbe
                 "name": "➡️"
               },
               "style": 2,
-              "custom_id": `page:${page + 1}:${isPublic}:${sort}:${encodeURIComponent(value)}`,
+              "custom_id": `p:${page + 1}:${isPublic}:${sort}:${encoded}`,
+              "disabled": disableNext,
+            },
+            {
+              "type": 2,
+              "emoji": {
+                "id": null,
+                "name": "⏩"
+              },
+              "style": 2,
+              "custom_id": `j:${sorted.length - 1}:${isPublic}:${sort}:${encoded}`,
               "disabled": disableNext,
             }
         ]
-    }
+      },
     ],
     flags: isPublic ? undefined : MessageFlags.Ephemeral,
   };

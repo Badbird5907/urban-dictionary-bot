@@ -36,7 +36,6 @@ export async function POST(request: Request) {
     return new NextResponse("Invalid request", { status: 401 })
   }
   const { interaction } = verifyResult
-  // console.log("ia", typeof interaction, JSON.stringify(interaction, null, 2));
 
   if (interaction.type === InteractionType.Ping) {
     // The `PING` message is used during the initial webhook handshake, and is
@@ -53,16 +52,16 @@ export async function POST(request: Request) {
     
     // @ts-ignore - stfu
     const token = interaction.token;
-    if (id.startsWith("page")) {
+    if (id.startsWith("p:") || id.startsWith("j:")) {
       const [_, page, isPublic, sort, value] = id.split(":");
       const p = parseInt(page);
       if (isNaN(p) || p < 0) {
         return new NextResponse("Invalid request", { status: 400 })
       }
       waitUntil((async () => {  
-        const embed = await getEmbedData(value, isPublic === "true", p, sort);
+        const embed = await getEmbedData(decodeURIComponent(value), isPublic === "true", p, sort);
         // PATCH /webhooks/{application.id}/{interaction.token}/messages/@original
-        await fetch(`https://discord.com/api/v9/webhooks/${env.DISCORD_APP_ID}/${token}/messages/@original`, {
+        const res = await fetch(`https://discord.com/api/v9/webhooks/${env.DISCORD_APP_ID}/${token}/messages/@original`, {
           method: "PATCH",
           headers: {
             "Content-Type": "application/json",
@@ -78,7 +77,7 @@ export async function POST(request: Request) {
     } else if (id.startsWith("cs:")) { // change sort
       const [_, isPublic, nextSort, value] = id.split(":");
       waitUntil((async () => {
-        const embed = await getEmbedData(value, isPublic === "true", 0, nextSort);
+        const embed = await getEmbedData(decodeURIComponent(value), isPublic === "true", 0, nextSort);
         await fetch(`https://discord.com/api/v9/webhooks/${env.DISCORD_APP_ID}/${token}/messages/@original`, {
           method: "PATCH",
           headers: {
