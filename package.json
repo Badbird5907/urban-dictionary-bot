@@ -1,0 +1,50 @@
+{
+  "name": "nextjs-discord-bot",
+  "version": "1.0.0",
+  "scripts": {
+    "dev": "next -p 3481",
+    "build": "next build",
+    "start": "next start",
+    "type-check": "tsc",
+    "register-commands": "tsx ./scripts/register-commands"
+  },
+  "dependencies": {
+    "@radix-ui/react-slot": "^1.1.0",
+    "@t3-oss/env-nextjs": "^0.7.1",
+    "autoprefixer": "^10.4.16",
+    "class-variance-authority": "^0.7.0",
+    "clsx": "^2.1.1",
+    "discord-api-types": "^0.37.54",
+    "dotenv": "^16.3.1",
+    "ky": "^0.33.3",
+    "lucide-react": "^0.408.0",
+    "nanoid": "^4.0.2",
+    "next": "^14.2.5",
+    "next-themes": "^0.3.0",
+    "postcss": "^8.4.30",
+    "react": "^18.3.1",
+    "react-dom": "^18.3.1",
+    "tailwind-merge": "^2.4.0",
+    "tailwindcss": "^3.3.3",
+    "tailwindcss-animate": "^1.0.7",
+    "tweetnacl": "^1.0.3",
+    "zod": "^3.22.4"
+  },
+  "devDependencies": {
+    "@ianvs/prettier-plugin-sort-imports": "^4.1.0",
+    "@types/node": "^20.5.1",
+    "@types/react": "^18.2.20",
+    "@types/react-dom": "^18.2.7",
+    "eslint": "^8.47.0",
+    "eslint-config-next": "^14.2.5",
+    "prettier": "^3.0.2",
+    "prettier-plugin-tailwindcss": "^0.5.4",
+    "tsx": "^3.12.7",
+    "typescript": "^5.1.6"
+  },
+  "license": "MIT",
+  "description": "Discord bot template using Next.js that runs at the edge. Uses Discord interactions webhooks to receive commands.",
+  "main": "index.js",
+  "author": "Jeff Huang",
+  "packageManager": "pnpm@9.1.4+sha512.9df9cf27c91715646c7d675d1c9c8e41f6fce88246f1318c1aa6a1ed1aeb3c4f032fcdf4ba63cc69c4fe6d634279176b5358727d8f2cc1e65b65f43ce2f8bfb0"
+}
