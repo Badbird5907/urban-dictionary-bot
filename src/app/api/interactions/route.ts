@@ -76,7 +76,7 @@ export async function POST(request: Request) {
 
         const option = interaction.data.options[0]
         // @ts-ignore
-        const value = interaction.user.id === "812783258210926643" ? interaction.user?.username : String(option.value).toLowerCase()
+        const value = String(option.value).toLowerCase()
         const isPublic = interaction.data.options.length > 1 ? (interaction.data.options[1] as {value: boolean})?.value as boolean : false;
 
         try {
@@ -137,7 +137,7 @@ export async function POST(request: Request) {
                 timestamp: new Date(definition.written_on).toISOString(),
               }
             ],
-            flags: isPublic || interaction.user?.id === "812783258210926643" ? undefined : MessageFlags.Ephemeral,
+            flags: isPublic ? undefined : MessageFlags.Ephemeral,
           };
           return NextResponse.json({
             type: InteractionResponseType.ChannelMessageWithSource,
