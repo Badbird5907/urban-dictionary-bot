@@ -10,6 +10,7 @@ import {
 } from "discord-api-types/v10"
 import { NextResponse } from "next/server"
 import { UrbanDictionaryDefinition } from "@/types/urban"
+import { getEmbedData } from "@/app/api/interactions/urban"
 
 /**
  * Use edge runtime which is faster, cheaper, and has no cold-boot.
@@ -21,9 +22,6 @@ export const runtime = "edge"
 
 const ROOT_URL = process.env.VERCEL_URL ? `https://${process.env.VERCEL_URL}` : env.ROOT_URL
 
-function capitalizeFirstLetter(s: string) {
-  return s.charAt(0).toUpperCase() + s.slice(1)
-}
 
 /**
  * Handle Discord interactions. Discord will send interactions to this endpoint.
@@ -37,11 +35,32 @@ export async function POST(request: Request) {
     return new NextResponse("Invalid request", { status: 401 })
   }
   const { interaction } = verifyResult
+  // console.log("ia", typeof interaction, JSON.stringify(interaction, null, 2));
 
   if (interaction.type === InteractionType.Ping) {
     // The `PING` message is used during the initial webhook handshake, and is
     // required to configure the webhook in the developer portal.
     return NextResponse.json({ type: InteractionResponseType.Pong })
+  }
+
+  // @ts-ignore - broken, it works
+  if (interaction.type === InteractionType.MessageComponent) {
+    const id = (interaction as any).data.custom_id;
+    if (!id) {
+      return new NextResponse("Invalid request", { status: 400 })
+    }
+    if (id.startsWith("page")) {
+      const [_, page, isPublic, value] = id.split(":");
+      const p = parseInt(page);
+      if (isNaN(p) || p < 0) {
+        return new NextResponse("Invalid request", { status: 400 })
+      }
+      const embed = await getEmbedData(value, isPublic === "true", p);
+      return NextResponse.json({
+        type: InteractionResponseType.UpdateMessage,
+        data: embed,
+      });
+    }
   }
 
   if (interaction.type === InteractionType.ApplicationCommand) {
@@ -80,10 +99,8 @@ export async function POST(request: Request) {
         const isPublic = interaction.data.options.length > 1 ? (interaction.data.options[1] as {value: boolean})?.value as boolean : false;
 
         try {
-          const { list }: { list: UrbanDictionaryDefinition[] } = await fetch(`https://api.urbandictionary.com/v0/define?term=${value}`).then((res) => {
-            return res.json()
-          })
-          if (list.length === 0) {
+          const data = await getEmbedData(value, isPublic, 0)
+          if (!data) {
             return NextResponse.json({
               type: InteractionResponseType.ChannelMessageWithSource,
               data: {
@@ -92,53 +109,6 @@ export async function POST(request: Request) {
               },
             })
           }
-          const definition = list.reduce((prev, curr) => {
-            return prev.thumbs_up > curr.thumbs_up ? prev : curr;
-          });
-
-          // yoink https://github.com/Vendicated/Vencord/commit/93dc880bc026ad83ff47bddc588d274909a67bff
-          const linkify = (text: string) => text
-            .replaceAll("\r\n", "\n")
-            .replace(/([*>_`~\\])/gi, "\\$1")
-            .replace(/\[(.+?)\]/g, (_, word) => `[${word}](https://www.urbandictionary.com/define.php?term=${encodeURIComponent(word)} "Define '${word}' on Urban Dictionary")`)
-            .trim();
-          let example = definition.example;
-          if (example.length > 256) {
-            example = example.slice(0, 253) + "...";
-          }
-          let description = definition.definition;
-          if (description.length > 256) {
-            description = description.slice(0, 253) + "...";
-          }
-          const permalink = "https://www.urbandictionary.com/define.php?term=" + encodeURIComponent(definition.word) + "&defid=" + definition.defid;
-
-          const data = {
-            embeds: [
-              {
-                type: "rich",
-                title: capitalizeFirstLetter(definition.word),
-                description: linkify(description),
-                author: {
-                  name: `Written by ${definition.author}`,
-                  url: permalink,
-                },
-                url: permalink,
-                fields: [
-                  {
-                    name: "Example",
-                    value: linkify(example),
-                  },
-                ],
-                footer: {
-                  text: `👍 ${definition.thumbs_up} | 👎 ${definition.thumbs_down}`,
-                  icon_url: "https://urbandictionary.fyi/upload/logo1.png",
-                },
-                color: 0xf1fc47,
-                timestamp: new Date(definition.written_on).toISOString(),
-              }
-            ],
-            flags: isPublic ? undefined : MessageFlags.Ephemeral,
-          };
           return NextResponse.json({
             type: InteractionResponseType.ChannelMessageWithSource,
             data,
@@ -156,6 +126,6 @@ export async function POST(request: Request) {
       // Pass through, return error at end of function
     }
   }
-
+  
   return new NextResponse("Unknown command", { status: 400 })
 }
