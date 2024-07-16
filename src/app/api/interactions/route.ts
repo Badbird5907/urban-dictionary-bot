@@ -51,23 +51,19 @@ export async function POST(request: Request) {
       return new NextResponse("Invalid request", { status: 400 })
     }
     if (id.startsWith("page")) {
-      console.log(id);
       const [_, page, isPublic, value] = id.split(":");
       const p = parseInt(page);
       if (isNaN(p) || p < 0) {
         return new NextResponse("Invalid request", { status: 400 })
       }
-      console.log(JSON.stringify(interaction, null, 2));
       // @ts-ignore - stfu
       const interactionId = interaction.message.interaction_metadata.id;
       // @ts-ignore - stfu
       const token = interaction.token;
-      console.log("Token", token)
       waitUntil((async () => {  
         const embed = await getEmbedData(value, isPublic === "true", p);
         // PATCH /webhooks/{application.id}/{interaction.token}/messages/@original
-        console.log("Sending followup embed")
-        const res = await fetch(`https://discord.com/api/v9/webhooks/${env.DISCORD_APP_ID}/${token}/messages/@original`, {
+        await fetch(`https://discord.com/api/v9/webhooks/${env.DISCORD_APP_ID}/${token}/messages/@original`, {
           method: "PATCH",
           headers: {
             "Content-Type": "application/json",
