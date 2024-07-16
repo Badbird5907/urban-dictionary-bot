@@ -1,17 +1,40 @@
 import { UrbanDictionaryDefinition } from "@/types/urban";
 import { MessageFlags } from "discord-api-types/v10";
+import next from "next";
 
 function capitalizeFirstLetter(s: string) {
   return s.charAt(0).toUpperCase() + s.slice(1)
 }
-export const getEmbedData = async (value: string, isPublic: boolean, page: number = 0) => {
+export const sortType: {[key: string]: {name: string, icon: string, style?: number, sort: (a: UrbanDictionaryDefinition, b: UrbanDictionaryDefinition) => number}} = {
+  "tu": {
+    name: "Most Likes",
+    icon: "🔍", // default
+    sort: (a: UrbanDictionaryDefinition, b: UrbanDictionaryDefinition) => b.thumbs_up - a.thumbs_up,
+  },
+  "rt": {
+    name: "Ratio",
+    icon: "➗",
+    style: 1,
+    sort: (a: UrbanDictionaryDefinition, b: UrbanDictionaryDefinition) => (b.thumbs_up / b.thumbs_down) - (a.thumbs_up / a.thumbs_down),
+  },
+  "d": {
+    name: "Date",
+    icon: "📅",
+    sort: (a: UrbanDictionaryDefinition, b: UrbanDictionaryDefinition) => new Date(b.written_on).getTime() - new Date(a.written_on).getTime(),
+  },
+}
+
+export const getEmbedData = async (value: string, isPublic: boolean, page: number = 0, sort: keyof typeof sortType = "tu") => {
   const { list }: { list: UrbanDictionaryDefinition[] } = await fetch(`https://api.urbandictionary.com/v0/define?term=${value}`).then((res) => {
     return res.json()
   })
   if (list.length === 0) {
     return false;
   }
-  const sorted = list.sort((a, b) => b.thumbs_up - a.thumbs_up);
+  const s = sortType[sort];
+  const currentSortIndex = Object.keys(sortType).findIndex((key) => key === sort);
+  const nextSort = Object.keys(sortType)[(currentSortIndex + 1) % Object.keys(sortType).length];
+  const sorted = list.sort((a, b) => s.sort(a, b));
   const definition = sorted[page];
   if (!definition) {
     return false;
@@ -34,6 +57,11 @@ export const getEmbedData = async (value: string, isPublic: boolean, page: numbe
   const permalink = "https://www.urbandictionary.com/define.php?term=" + encodeURIComponent(definition.word) + "&defid=" + definition.defid;
   const disableNext = page === sorted.length - 1;
   const disablePrevious = page === 0;
+  const date: string = new Date(definition.written_on).toLocaleDateString("en-US", {
+    year: "numeric",
+    month: "long",
+    day: "numeric"
+  });
 
   const data = {
     embeds: [
@@ -50,14 +78,14 @@ export const getEmbedData = async (value: string, isPublic: boolean, page: numbe
           {
             name: "Example",
             value: linkify(example),
-          },
+          }
         ],
         footer: {
-          text: `👍 ${definition.thumbs_up} | 👎 ${definition.thumbs_down}`,
+          text: `👍 ${definition.thumbs_up} | 👎 ${definition.thumbs_down}${list.length > 1 && ` • ${s.icon}${s.name}`} • ${date}`,
           icon_url: "https://urbandictionary.fyi/upload/logo1.png",
         },
         color: 0xf1fc47,
-        timestamp: new Date(definition.written_on).toISOString(),
+        // timestamp: new Date(definition.written_on).toISOString(),
       }
     ],
     components: [
@@ -71,18 +99,29 @@ export const getEmbedData = async (value: string, isPublic: boolean, page: numbe
                 "name": "⬅️"
               }, 
               "style": 2,
-              "custom_id": `page:${page - 1}:${isPublic}:${encodeURIComponent(value)}`,
+              "custom_id": `page:${page - 1}:${isPublic}:${sort}:${encodeURIComponent(value)}`,
               "disabled": disablePrevious
             },
-            {
+            ...(list.length > 1 ? [
+              {
                 "type": 2,
                 "emoji": {
                   "id": null,
-                  "name": "➡️"
+                  "name": s.icon,
                 },
-                "style": 2,
-                "custom_id": `page:${page + 1}:${isPublic}:${encodeURIComponent(value)}`,
-                "disabled": disableNext,
+                "style": s.style ?? 2,
+                "custom_id": `cs:${isPublic}:${nextSort}:${encodeURIComponent(value)}`
+              },
+            ] : []),
+            {
+              "type": 2,
+              "emoji": {
+                "id": null,
+                "name": "➡️"
+              },
+              "style": 2,
+              "custom_id": `page:${page + 1}:${isPublic}:${sort}:${encodeURIComponent(value)}`,
+              "disabled": disableNext,
             }
         ]
     }

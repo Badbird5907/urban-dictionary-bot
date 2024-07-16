@@ -50,19 +50,35 @@ export async function POST(request: Request) {
     if (!id) {
       return new NextResponse("Invalid request", { status: 400 })
     }
+    
+    // @ts-ignore - stfu
+    const token = interaction.token;
     if (id.startsWith("page")) {
-      const [_, page, isPublic, value] = id.split(":");
+      const [_, page, isPublic, sort, value] = id.split(":");
       const p = parseInt(page);
       if (isNaN(p) || p < 0) {
         return new NextResponse("Invalid request", { status: 400 })
       }
-      // @ts-ignore - stfu
-      const interactionId = interaction.message.interaction_metadata.id;
-      // @ts-ignore - stfu
-      const token = interaction.token;
       waitUntil((async () => {  
-        const embed = await getEmbedData(value, isPublic === "true", p);
+        const embed = await getEmbedData(value, isPublic === "true", p, sort);
         // PATCH /webhooks/{application.id}/{interaction.token}/messages/@original
+        await fetch(`https://discord.com/api/v9/webhooks/${env.DISCORD_APP_ID}/${token}/messages/@original`, {
+          method: "PATCH",
+          headers: {
+            "Content-Type": "application/json",
+          },
+          body: JSON.stringify({
+            ...embed,
+          }),
+        });
+      })())
+      return NextResponse.json({
+        type: InteractionResponseType.DeferredMessageUpdate,
+      })
+    } else if (id.startsWith("cs:")) { // change sort
+      const [_, isPublic, nextSort, value] = id.split(":");
+      waitUntil((async () => {
+        const embed = await getEmbedData(value, isPublic === "true", 0, nextSort);
         await fetch(`https://discord.com/api/v9/webhooks/${env.DISCORD_APP_ID}/${token}/messages/@original`, {
           method: "PATCH",
           headers: {
