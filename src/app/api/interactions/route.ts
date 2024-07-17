@@ -69,7 +69,7 @@ export async function POST(request: Request) {
             ...embed,
           }),
         });
-        console.log("patched", res.status, await res.text());
+        // console.log("patched", res.status, await res.text());
       })())
       return NextResponse.json({
         type: InteractionResponseType.DeferredMessageUpdate,

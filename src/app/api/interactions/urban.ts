@@ -24,7 +24,6 @@ export const sortType: {[key: string]: {name: string, icon: string, style?: numb
 }
 
 export const getEmbedData = async (_value: string, isPublic: boolean, _page: number = 0, sort: keyof typeof sortType = "tu", showRandomBtn: boolean = false) => {
-  console.log("fetching", _value, isPublic, _page, sort, showRandomBtn);
   let value = _value;
   let rand = showRandomBtn ? "t" : "f";
   if (_value === "random") { // spaghetti code lol
@@ -42,7 +41,6 @@ export const getEmbedData = async (_value: string, isPublic: boolean, _page: num
   if (list.length === 0) {
     return false;
   }
-  console.log("got", list.length, "definitions for", value);
   const s = sortType[sort];
   const currentSortIndex = Object.keys(sortType).findIndex((key) => key === sort);
   const nextSort = Object.keys(sortType)[(currentSortIndex + 1) % Object.keys(sortType).length];
