@@ -40,8 +40,24 @@ const URBAN_COMMAND = {
   ],
 }
 
+const RANDOM_COMMAND = {
+  name: "random",
+  description: "Get a random definition from the Urban Dictionary",
+  contexts: [0,1,2],
+  integration_types: [0,1],
+  options: [
+    {
+      name: "public",
+      description: "Show the definition to everyone?",
+      type: ApplicationCommandOptionType.Boolean,
+      default: false,
+    },
+  ],
+}
+
 export const commands = {
   ping: PING_COMMAND,
   invite: INVITE_COMMAND,
   urban: URBAN_COMMAND,
+  random: RANDOM_COMMAND,
 } as const

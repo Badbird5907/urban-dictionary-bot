@@ -11,7 +11,6 @@ import {
 import { NextResponse } from "next/server"
 import { waitUntil } from "@vercel/functions";
 import { getEmbedData } from "@/app/api/interactions/urban"
-import { Inter } from "next/font/google"
 
 /**
  * Use edge runtime which is faster, cheaper, and has no cold-boot.
@@ -52,14 +51,14 @@ export async function POST(request: Request) {
     
     // @ts-ignore - stfu
     const token = interaction.token;
-    if (id.startsWith("p:") || id.startsWith("j:")) {
-      const [_, page, isPublic, sort, value] = id.split(":");
+    if (id.startsWith("p:") || id.startsWith("j:") || id.startsWith("r:")) {
+      const [_, page, isPublic, sort, isRandom, value] = id.split(":");
       const p = parseInt(page);
       if (isNaN(p) || p < 0) {
         return new NextResponse("Invalid request", { status: 400 })
       }
       waitUntil((async () => {  
-        const embed = await getEmbedData(decodeURIComponent(value), isPublic === "true", p, sort);
+        const embed = await getEmbedData(decodeURIComponent(value), isPublic === "true", p, sort, isRandom === "t");
         // PATCH /webhooks/{application.id}/{interaction.token}/messages/@original
         const res = await fetch(`https://discord.com/api/v9/webhooks/${env.DISCORD_APP_ID}/${token}/messages/@original`, {
           method: "PATCH",
@@ -70,14 +69,15 @@ export async function POST(request: Request) {
             ...embed,
           }),
         });
+        console.log("patched", res.status, await res.text());
       })())
       return NextResponse.json({
         type: InteractionResponseType.DeferredMessageUpdate,
       })
     } else if (id.startsWith("cs:")) { // change sort
-      const [_, isPublic, nextSort, value] = id.split(":");
+      const [_, isPublic, nextSort, isRandom, value] = id.split(":");
       waitUntil((async () => {
-        const embed = await getEmbedData(decodeURIComponent(value), isPublic === "true", 0, nextSort);
+        const embed = await getEmbedData(decodeURIComponent(value), isPublic === "true", 0, nextSort, isRandom === "t");
         await fetch(`https://discord.com/api/v9/webhooks/${env.DISCORD_APP_ID}/${token}/messages/@original`, {
           method: "PATCH",
           headers: {
@@ -113,24 +113,34 @@ export async function POST(request: Request) {
           },
         })
 
+      case commands.random.name:
       case commands.urban.name:
-        if (!interaction.data.options || interaction.data.options?.length < 1) {
-          return NextResponse.json({
-            type: InteractionResponseType.ChannelMessageWithSource,
-            data: {
-              content: "Oops! Please enter a query!",
-              flags: MessageFlags.Ephemeral,
-            },
-          })
+        let value = ""
+        let isPublic = false;
+        let isRandom = false;
+        if (name === commands.random.name) {
+          value = "random"
+          isRandom = true;
+          isPublic = (interaction.data.options?.length || 0) > 0 ? (interaction.data.options![0] as {value: boolean})?.value as boolean : false;
+        } else {
+          if (!interaction.data.options || interaction.data.options?.length < 1) {
+            return NextResponse.json({
+              type: InteractionResponseType.ChannelMessageWithSource,
+              data: {
+                content: "Oops! Please enter a query!",
+                flags: MessageFlags.Ephemeral,
+              },
+            })
+          }
+          const option = interaction.data.options[0]
+          // @ts-ignore
+          value = String(option.value).toLowerCase()
+          isRandom = value === "random";
+          isPublic = interaction.data.options.length > 1 ? (interaction.data.options[1] as {value: boolean})?.value as boolean : false;
         }
 
-        const option = interaction.data.options[0]
-        // @ts-ignore
-        const value = String(option.value).toLowerCase()
-        const isPublic = interaction.data.options.length > 1 ? (interaction.data.options[1] as {value: boolean})?.value as boolean : false;
-
         try {
-          const data = await getEmbedData(value, isPublic, 0)
+          const data = await getEmbedData(value, isPublic, 0, "tu", isRandom)
           if (!data) {
             return NextResponse.json({
               type: InteractionResponseType.ChannelMessageWithSource,

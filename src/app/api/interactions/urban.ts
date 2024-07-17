@@ -1,6 +1,5 @@
 import { UrbanDictionaryDefinition } from "@/types/urban";
 import { MessageFlags } from "discord-api-types/v10";
-import next from "next";
 
 function capitalizeFirstLetter(s: string) {
   return s.charAt(0).toUpperCase() + s.slice(1)
@@ -24,13 +23,26 @@ export const sortType: {[key: string]: {name: string, icon: string, style?: numb
   },
 }
 
-export const getEmbedData = async (value: string, isPublic: boolean, _page: number = 0, sort: keyof typeof sortType = "tu") => {
-  const { list }: { list: UrbanDictionaryDefinition[] } = await fetch(`https://api.urbandictionary.com/v0/define?term=${value}`).then((res) => {
+export const getEmbedData = async (_value: string, isPublic: boolean, _page: number = 0, sort: keyof typeof sortType = "tu", showRandomBtn: boolean = false) => {
+  console.log("fetching", _value, isPublic, _page, sort, showRandomBtn);
+  let value = _value;
+  let rand = showRandomBtn ? "t" : "f";
+  if (_value === "random") { // spaghetti code lol
+    console.log("fetching random");
+    const { list } = await fetch("https://api.urbandictionary.com/v0/random").then((res) => {
+      return res.json()
+    });
+    value = list[0].word;
+    rand = "t";
+  }
+  // re-fetch down here so we can get a full paginate-able list
+  let { list }: { list: UrbanDictionaryDefinition[] } = await fetch(`https://api.urbandictionary.com/v0/define?term=${value}`).then((res) => {
     return res.json()
   })
   if (list.length === 0) {
     return false;
   }
+  console.log("got", list.length, "definitions for", value);
   const s = sortType[sort];
   const currentSortIndex = Object.keys(sortType).findIndex((key) => key === sort);
   const nextSort = Object.keys(sortType)[(currentSortIndex + 1) % Object.keys(sortType).length];
@@ -91,6 +103,7 @@ export const getEmbedData = async (value: string, isPublic: boolean, _page: numb
         // timestamp: new Date(definition.written_on).toISOString(),
       }
     ],
+    // using acronyms for custom_id to save character space
     components: [
       {
         "type": 1,
@@ -102,7 +115,7 @@ export const getEmbedData = async (value: string, isPublic: boolean, _page: numb
                 "name": "⏪"
               },
               "style": 2,
-              "custom_id": `j:0:${isPublic}:${sort}:${encoded}`,
+              "custom_id": `j:0:${isPublic}:${sort}:${rand}:${encoded}`,
               "disabled": disablePrevious,
             },
             {
@@ -112,20 +125,19 @@ export const getEmbedData = async (value: string, isPublic: boolean, _page: numb
                 "name": "⬅️"
               }, 
               "style": 2,
-              "custom_id": `p:${page - 1}:${isPublic}:${sort}:${encoded}`,
+              "custom_id": `p:${page - 1}:${isPublic}:${sort}:${rand}:${encoded}`,
               "disabled": disablePrevious
             },
-            ...(list.length > 1 ? [
-              {
-                "type": 2,
-                "emoji": {
-                  "id": null,
-                  "name": s.icon,
-                },
-                "style": s.style ?? 2,
-                "custom_id": `cs:${isPublic}:${nextSort}:${encoded}`
+            {
+              "type": 2,
+              "emoji": {
+                "id": null,
+                "name": s.icon,
               },
-            ] : []),
+              "style": s.style ?? 2,
+              "custom_id": `cs:${isPublic}:${nextSort}:${rand}:${encoded}`,
+              "disabled": list.length <= 1,
+            },
             {
               "type": 2,
               "emoji": {
@@ -133,7 +145,7 @@ export const getEmbedData = async (value: string, isPublic: boolean, _page: numb
                 "name": "➡️"
               },
               "style": 2,
-              "custom_id": `p:${page + 1}:${isPublic}:${sort}:${encoded}`,
+              "custom_id": `p:${page + 1}:${isPublic}:${sort}:${rand}:${encoded}`,
               "disabled": disableNext,
             },
             {
@@ -143,11 +155,27 @@ export const getEmbedData = async (value: string, isPublic: boolean, _page: numb
                 "name": "⏩"
               },
               "style": 2,
-              "custom_id": `j:${sorted.length - 1}:${isPublic}:${sort}:${encoded}`,
+              "custom_id": `j1:${sorted.length - 1}:${isPublic}:${sort}:${rand}:${encoded}`,
               "disabled": disableNext,
             }
         ]
       },
+      ...(showRandomBtn ? [
+        {
+          "type": 1,
+          "components": [
+            {
+              "type": 2,
+              "style": 1,
+              "emoji": {
+                "id": null,
+                "name": "🎲"
+              },
+              "custom_id": `r:0:${isPublic}:${sort}:t:random`,
+            }
+          ]
+        }
+      ] : [])
     ],
     flags: isPublic ? undefined : MessageFlags.Ephemeral,
   };
