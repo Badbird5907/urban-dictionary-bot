@@ -27,7 +27,7 @@ export const getEmbedData = async (_value: string, isPublic: boolean, _page: num
   let value = _value;
   let rand = showRandomBtn ? "t" : "f";
   if (_value === "random") { // spaghetti code lol
-    console.log("fetching random");
+    // console.log("fetching random");
     const { list } = await fetch("https://api.urbandictionary.com/v0/random").then((res) => {
       return res.json()
     });
