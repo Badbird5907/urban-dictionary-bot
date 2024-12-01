@@ -51,18 +51,6 @@ export async function POST(request: Request) {
     
     // @ts-ignore - stfu
     const token = interaction.token;
-
-    if (id === "del") {
-      waitUntil((async () => {
-        await fetch(`https://discord.com/api/v9/webhooks/${env.DISCORD_APP_ID}/${token}/messages/@original`, {
-          method: "DELETE",
-        });
-      })())
-      return NextResponse.json({
-        type: InteractionResponseType.DeferredMessageUpdate,
-      })
-    }
-
     if (id.startsWith("p:") || id.startsWith("j:") || id.startsWith("r:")) {
       const [_, page, isPublic, sort, isRandom, value] = id.split(":");
       const p = parseInt(page);
