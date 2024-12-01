@@ -155,7 +155,16 @@ export const getEmbedData = async (_value: string, isPublic: boolean, _page: num
               "style": 2,
               "custom_id": `j1:${sorted.length - 1}:${isPublic}:${sort}:${rand}:${encoded}`,
               "disabled": disableNext,
-            }
+            },
+            {
+              "type": 2,
+              "emoji": {
+                "id": null,
+                "name": "🗑️"
+              },
+              "style": 2,
+              "custom_id": `del`,
+            },
         ]
       },
       ...(showRandomBtn ? [
