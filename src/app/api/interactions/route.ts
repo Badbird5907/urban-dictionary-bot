@@ -139,30 +139,42 @@ export async function POST(request: Request) {
           isPublic = interaction.data.options.length > 1 ? (interaction.data.options[1] as {value: boolean})?.value as boolean : false;
         }
 
-        try {
-          const data = await getEmbedData(value, isPublic, 0, "tu", isRandom)
-          if (!data) {
-            return NextResponse.json({
-              type: InteractionResponseType.ChannelMessageWithSource,
-              data: {
-                content: "No definition found",
-                flags: isPublic ? undefined : MessageFlags.Ephemeral,
-              },
-            })
+        // @ts-ignore
+        const token = interaction.token;
+
+        // Defer the response immediately to avoid Discord's 3-second timeout on cold starts
+        waitUntil((async () => {
+          try {
+            const data = await getEmbedData(value, isPublic, 0, "tu", isRandom)
+            const body = data
+              ? { ...data }
+              : {
+                  content: "No definition found",
+                  flags: isPublic ? undefined : MessageFlags.Ephemeral,
+                };
+            await fetch(`https://discord.com/api/v9/webhooks/${env.DISCORD_APP_ID}/${token}/messages/@original`, {
+              method: "PATCH",
+              headers: { "Content-Type": "application/json" },
+              body: JSON.stringify(body),
+            });
+          } catch (error) {
+            await fetch(`https://discord.com/api/v9/webhooks/${env.DISCORD_APP_ID}/${token}/messages/@original`, {
+              method: "PATCH",
+              headers: { "Content-Type": "application/json" },
+              body: JSON.stringify({
+                content: "Failed to fetch definition. Please try again later, or join [our support server](https://discord.badbrid.dev/) for help.",
+                flags: MessageFlags.Ephemeral,
+              }),
+            });
           }
-          return NextResponse.json({
-            type: InteractionResponseType.ChannelMessageWithSource,
-            data,
-          })
-        } catch (error) {
-          return NextResponse.json({
-            type: InteractionResponseType.ChannelMessageWithSource,
-            data: {
-              content: "Failed to fetch definition. Please try again later, or join [our support server](https://discord.badbrid.dev/) for help.",
-              flags: MessageFlags.Ephemeral,
-            },
-          })
-        }
+        })())
+
+        return NextResponse.json({
+          type: InteractionResponseType.DeferredChannelMessageWithSource,
+          data: {
+            flags: isPublic ? undefined : MessageFlags.Ephemeral,
+          },
+        })
       default:
       // Pass through, return error at end of function
     }
